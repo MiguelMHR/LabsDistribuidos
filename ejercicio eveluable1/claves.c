@@ -10,7 +10,7 @@
 #include <errno.h>
 
 #define DIRECTORIO "clientes"
-#define KEY_MAX 256
+#define KEY_MAX 32
 #define MAX_VALUE1 256
 #define MAX_VALUE2 32
 
@@ -76,7 +76,7 @@ int init(){
         if (entry->d_name[0] != '.') { 
             // Ignorar DIRECTORIOs '.' y '..'
             char filename[KEY_MAX];
-            snprintf(filename, KEY_MAX, "%s/%s", DIRECTORIO, entry->d_name);
+            snprintf(filename, KEY_MAX + sizeof(DIRECTORIO), "%s/%s", DIRECTORIO, entry->d_name);
             if (unlink(filename) == -1) {
                 closedir(dir);
                 return -1;
@@ -88,7 +88,7 @@ int init(){
 }
 
 int set_value(int key, char *value1, int N_value2, double *V_value2){
-    char nombre_archivo[32]; // Tamaño de un int
+    char nombre_archivo[KEY_MAX]; // Tamaño de un int
     sprintf(nombre_archivo, "%d.txt", key); // Genera el nombre del archivo usando la key
     
     if (exist(nombre_archivo) == 0) {
@@ -100,7 +100,7 @@ int set_value(int key, char *value1, int N_value2, double *V_value2){
 
         if (chdir(DIRECTORIO) == -1) {
         // Error al cambiar al directorio clientes
-        return -1;
+            return -1;
         }
 
         FILE *archivo;
@@ -126,10 +126,16 @@ int set_value(int key, char *value1, int N_value2, double *V_value2){
 }
 
 int get_value(int key, char *value1, int *N_value2, double *V_value2) {
-    char nombre_archivo[32]; // Tamaño de un int
+    char nombre_archivo[KEY_MAX]; // Tamaño de un int
     sprintf(nombre_archivo, "%d.txt", key); // Genera el nombre del archivo usando la key
     
     if (exist(nombre_archivo) == 1) {
+        
+        if (chdir(DIRECTORIO) == -1) {
+        // Error al cambiar al directorio clientes
+            return -1;
+        }
+
         FILE *archivo;
         archivo = fopen(nombre_archivo, "r"); 
         
@@ -182,7 +188,62 @@ int get_value(int key, char *value1, int *N_value2, double *V_value2) {
 }
 
 
-int modify_value(int key, char *value1, int N_value2, double *V_value2);
+int modify_value(int key, char *value1, int N_value2, double *V_value2){
+    char nombre_archivo[KEY_MAX]; // Tamaño de un int
+    sprintf(nombre_archivo, "%d.txt", key); // Genera el nombre del archivo usando la key
+    
+    if (exist(nombre_archivo) == 1){
+        if (N_value2 < 1 || N_value2 > 32) {
+            // N_value2 fuera de rango
+            return -1; 
+        }
+
+        if (chdir(DIRECTORIO) == -1) {
+            // Error al cambiar al directorio clientes
+            return -1;
+        }
+        FILE *archivo;
+        archivo = fopen(nombre_archivo, "w"); 
+        
+        if (archivo == NULL) {
+            // No se pudo abrir el archivo
+            return -1;
+        }
+
+        // Escribe en el archivo la key y value1
+        fprintf(archivo, "%i \n%s \n%i \n", key, value1, N_value2);
+        // Escribe en el archivo el double
+        for (int i = 0; i < N_value2; i++) {
+            fprintf(archivo, "%f ", V_value2[i]);
+        }
+        fclose(archivo);
+        return 0;
+    } 
+    else {
+        return -1;
+    }
+};
 
 
-int delete_key(int key);
+int delete_key(int key){
+    char nombre_archivo[KEY_MAX]; // Tamaño de un int
+    sprintf(nombre_archivo, "%d.txt", key); // Genera el nombre del archivo usando la key
+    
+    if (exist(nombre_archivo) == 1) {
+
+        if (chdir(DIRECTORIO) == -1) {
+        // Error al cambiar al directorio clientes
+            return -1;
+        }
+
+        char filename[KEY_MAX];
+        snprintf(filename, KEY_MAX + sizeof(DIRECTORIO), "%s/%i.txt", DIRECTORIO, key);
+        if (unlink(filename) == -1) {
+            return -1;
+        }
+        return 0;
+    }
+    else {
+        return -1;
+    }
+};
