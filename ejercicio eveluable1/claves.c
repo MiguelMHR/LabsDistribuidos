@@ -11,6 +11,8 @@
 
 #define DIRECTORIO "clientes"
 #define KEY_MAX 256
+#define MAX_VALUE1 256
+#define MAX_VALUE2 32
 
 int crearDirectorio() {
     DIR *dir = opendir(DIRECTORIO);
@@ -62,7 +64,7 @@ int init(){
     if (crearDirectorio() == 0){
         return -1;
     }
-  
+
     DIR *dir = opendir(DIRECTORIO);
     if (!dir) {
         // Error al abrir el directorio
@@ -85,20 +87,32 @@ int init(){
     return 0;
 }
 
-int set_value(int key, char *value1, int N_value2, double *V_value2) {
+int set_value(int key, char *value1, int N_value2, double *V_value2){
     char nombre_archivo[32]; // Tamaño de un int
     sprintf(nombre_archivo, "%d.txt", key); // Genera el nombre del archivo usando la key
     
     if (exist(nombre_archivo) == 0) {
+
+        if (N_value2 < 1 || N_value2 > 32) {
+            // N_value2 fuera de rango
+            return -1; 
+        }
+
+        if (chdir(DIRECTORIO) == -1) {
+        // Error al cambiar al directorio clientes
+        return -1;
+        }
+
         FILE *archivo;
-        archivo = fopen(nombre_archivo, "w"); // Abre el archivo en modo escritura
+        // Abre el archivo en modo escritura
+        archivo = fopen(nombre_archivo, "w"); 
         if (archivo == NULL) {
             // No se pudo crear el archivo
             return -1;
         }
 
         // Escribe en el archivo la key y value1
-        fprintf(archivo, "%i \n%s \n", key, value1);
+        fprintf(archivo, "%i \n%s \n%i \n", key, value1, N_value2);
         // Escribe en el archivo el double
         for (int i = 0; i < N_value2; i++) {
             fprintf(archivo, "%f ", V_value2[i]);
@@ -111,7 +125,61 @@ int set_value(int key, char *value1, int N_value2, double *V_value2) {
     }
 }
 
-int get_value(int key, char *value1, int *N_value2, double *V_value2);
+int get_value(int key, char *value1, int *N_value2, double *V_value2) {
+    char nombre_archivo[32]; // Tamaño de un int
+    sprintf(nombre_archivo, "%d.txt", key); // Genera el nombre del archivo usando la key
+    
+    if (exist(nombre_archivo) == 1) {
+        FILE *archivo;
+        archivo = fopen(nombre_archivo, "r"); 
+        
+        if (archivo == NULL) {
+            // No se pudo abrir el archivo
+            return -1;
+        }
+
+        // Lee los valores del archivo
+        if (fscanf(archivo, "%d", &key) != 1) {
+            // Error al leer el valor key
+            fclose(archivo);
+            return -1;
+        }
+
+        if (fgets(value1, MAX_VALUE1, archivo) == NULL) {
+            // Error al leer el valor value1
+            fclose(archivo);
+            return -1;
+        }
+
+        if (fscanf(archivo, "%d", N_value2) != 1) {
+            // Error al leer el valor N_value2
+            fclose(archivo);
+            return -1;
+        }
+
+        if (*N_value2 < 1 || *N_value2 > MAX_VALUE2) {
+            // N_value2 fuera de rango
+            fclose(archivo);
+            return -1;
+        }
+
+        for (int i = 0; i < *N_value2; i++) {
+            if (fscanf(archivo, "%lf", &V_value2[i]) != 1) {
+                // Error al leer los valores de V_value2
+                fclose(archivo);
+                return -1;
+            }
+        }
+
+        fclose(archivo);
+        // Lectura exitosa
+        return 0; 
+    } 
+    else {
+        // El archivo no existe
+        return -1; 
+    }
+}
 
 
 int modify_value(int key, char *value1, int N_value2, double *V_value2);
