@@ -1,87 +1,67 @@
-//
-// Created by kai on 03/03/2024.
-//
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include "lines.h"
-#define MAX_LINE 	256
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <mqueue.h>
 
-int main(int argc, char *argv[]){
-        int sd, sc;
-	int val;
-	int err;
-        socklen_t size;
+#define MAX_MSG_SIZE 256
+#define SERVER_QUEUE_NAME "/Cola"
 
-        struct sockaddr_in server_addr,  client_addr;
-        char texto[MAX_LINE], rec[MAX_LINE];
+void handle_request(char *request) {
+    // Aquí se implementaría la lógica para manejar las solicitudes
+    // Por ejemplo, interpretar el mensaje, realizar operaciones y enviar respuestas
+    printf("Recibido: %s\n", request);
+}
 
-        sd =  socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (sd < 0) {
-                perror("Error in socket");
-                exit(1);
+int main() {
+    mqd_t server_queue;
+    struct mq_attr attr;
+    char buffer[MAX_MSG_SIZE + 1];
+    ssize_t bytes_read;
+
+    // Crear la cola de mensajes del servidor
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = 10;
+    attr.mq_msgsize = MAX_MSG_SIZE;
+    attr.mq_curmsgs = 0;
+
+    server_queue = mq_open(SERVER_QUEUE_NAME, O_CREAT | O_RDONLY, 0644, &attr);
+    if (server_queue == (mqd_t)-1) {
+        perror("mq_open");
+        exit(1);
+    }
+
+    printf("Servidor iniciado. Esperando solicitudes...\n");
+
+    while (1) {
+        // Recibir mensajes de la cola de mensajes del servidor
+        bytes_read = mq_receive(server_queue, buffer, MAX_MSG_SIZE, NULL);
+        if (bytes_read == -1) {
+            perror("mq_receive");
+            exit(1);
         }
 
-        val = 1;
-        err = setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char *) &val, sizeof(int));
-        if (err < 0) {
-                perror("Error in opction");
-                exit(1);
+        // Añadir terminador nulo
+        buffer[bytes_read] = '\0';
+
+        // Procesar la solicitud en un nuevo proceso
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("fork");
+            exit(1);
+        } else if (pid == 0) { // Proceso hijo
+            handle_request(buffer);
+            exit(0);
         }
+    }
 
-         err = bind(sd, (const struct sockaddr *)&server_addr, sizeof(server_addr));
-	if (err == -1) {
-		printf("Error en bind\n");
-		return -1;
-	}
+    // Cerrar la cola de mensajes del servidor
+    if (mq_close(server_queue) == -1) {
+        perror("mq_close");
+        exit(1);
+    }
 
-    	err = listen(sd, SOMAXCONN);
-	if (err == -1) {
-		printf("Error en listen\n");
-		return -1;
-	}
-
-        size = sizeof(client_addr);
-
-        while(1){
-                printf("esperando conexion\n");
-                sc = accept(sd, (struct sockaddr *)&client_addr, (socklen_t *)&size);
-                if (sc == -1) {
-                        printf("Error en accept\n");
-                        return -1;
-                }
-                while (1){
-                        bzero((char *)&server_addr, sizeof(server_addr));
-                        server_addr.sin_family      = AF_INET;
-                        server_addr.sin_addr.s_addr = INADDR_ANY;
-                        server_addr.sin_port        = htons(4200);
-                        printf("conexión aceptada de IP: %s   Puerto: %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
-                        err = readLine ( sc, texto, MAX_LINE);   // recibe la operació
-                        if (err == -1) {
-                                printf("Error en recepcion\n");
-                                close(sc);
-                                continue;
-                        }
-                        err = sendMessage( sc, rec, strlen(texto)); // recibe a
-                        if (err == -1) {
-                                printf("Error en recepcion\n");
-                                close(sc);
-                                continue;
-                        }
-                        close(sc);                      // cierra la conexión (sc)
-                }
-        }
- 
-
-	// Complete .....
-
-	
-        close (sd);
-        return(0);
+    return 0;
 }
