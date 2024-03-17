@@ -1,6 +1,7 @@
 //
 // Created by kai on 03/03/2024.
 //
+#include "clave.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
+
 
 #define DIRECTORIO "clientes"
 #define KEY_MAX 32
