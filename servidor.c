@@ -1,70 +1,13 @@
 // ----------     LIBRERÍAS Y DEFINICIONES     ---------- //
 
+#include "files.c"
+#include "messages.h"
+
 // Librerías Básicas
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dirent.h>
 #include <pthread.h>
 #include <mqueue.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <semaphore.h>
-
-// Límites del path, value1 y N_value2
-#define MAX_STR_LENGTH 1024
-#define MAX_VALUE1_LENGTH 256
-#define MAX_N_VALUE2 32
-#define MQ_SERVER "/mq_server"
-
-// ----------     ESTRUCTURAS     ---------- //
-
-// Para poder comunicarse, se debe establecer un código de operación
-// para saber qué debe ejecutar el servidor. Los códigos de operación son:
-//     1: init()
-//     2: set_value()
-//     3: get_value()
-//     4: modify_value()
-//     5: delete_key()
-//     6: exists()
-// La variable operation guardará la opción elegida por el cliente
-
-typedef struct {
-    // Tupla:
-    int key;
-    char value1[MAX_VALUE1_LENGTH];
-    int N_value2;
-    double V_value_2[MAX_N_VALUE2];
-    // Operación y nombre
-    int operation;
-    char q_name[MAX_STR_LENGTH]; // Nombre de la cola de respuesta
-} request;
-
-typedef struct {
-    int return_value; // Error (-1) o éxito (0)
-    // Tupla:
-    char value1[MAX_VALUE1_LENGTH];
-    int N_value2;
-    double V_value_2[MAX_N_VALUE2];
-} response;
-
-// Estrcutura de la message queue de la solicitud
-struct mq_attr requestAttributes = {
-	.mq_flags = 0,				   // Flags (ignored for mq_open())
-	.mq_maxmsg = 10,			   // Max. # of messages on queue
-	.mq_msgsize = sizeof(request), // Max. message size (bytes)
-	.mq_curmsgs = 0,			   // # of messages currently in queue
-};
-
-// Estructura de la message queue de la respuesta
-struct mq_attr responseAttributes = {
-	.mq_flags = 0,					// Flags (ignored for mq_open())
-	.mq_maxmsg = 1,					// Max. # of messages on queue (only 1 response)
-	.mq_msgsize = sizeof(response), // Max. message size (bytes)
-	.mq_curmsgs = 0,				// # of messages currently in queue
-};
 
 // ----------     VARIABLES DE CONTROL     ---------- //
 pthread_mutex_t mutex_comunicacion = PTHREAD_MUTEX_INITIALIZER;
@@ -78,29 +21,6 @@ int n_lectores = 0; // Variable para controlar el número de lectores
 
 // ----------     FUNCIONES AUXILIARES     ---------- //
 
-// Función para limpiar el directorio de mensajes
-int clean_directory(const char *dirname) {
-    DIR *dir;
-    struct dirent *entry;
-    char path[MAX_STR_LENGTH];
-
-    dir = opendir(dirname);
-    if (dir == NULL) {
-        printf("Error al abrir el directorio");
-        return -1;
-    }
-
-    while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
-            snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
-            // Se elimina el archivo del directorio
-            remove(path);
-        }
-    }
-    closedir(dir);
-    return 0;
-}
-
 // Función para inicializar el semáforo de forma segura
 void init_sem() {
     pthread_mutex_lock(&mutex_lectura);
@@ -111,178 +31,7 @@ void init_sem() {
     pthread_mutex_unlock(&mutex_lectura);
 }
 
-// ----------     FUNCIONES PRINCIPALES     ---------- //
-
-// Función para comprobar la existencia del mensaje
-int exists(int key) {
-    FILE *file;
-    char path[MAX_STR_LENGTH];
-    // Combinamos el path con la key para obtener el nombre del archivo
-    sprintf(path, "./mensajes/%d.txt", key);
-    // Abrimos el archivo en modo lectura para comprobar si existe
-    file = fopen(path, "r");
-    // Si no existe, retornamos 0
-    if (file==NULL) {
-        return 0;
-    }
-    // Si existe, retornamos 1 y cerramos archivo
-    fclose(file);
-    return 1;
-}
-
-// Función para reiniciar el directorio de mensajes
-int init(){
-    const char *dirname = "./mensajes";
-
-    // Si no está creado, lo creamos
-    if (fopen(dirname, "r") == NULL) {
-        // Si no se pudo crear, retornamos -1
-        if (mkdir(dirname, 0777) == -1) {
-            printf("No se pudo crear el directorio de mensajes");
-            return -1;
-        }
-    } 
-    // Si ya existe, lo limpiamos
-    else {    
-        if (clean_directory(dirname) == -1) {
-            printf("No se pudo limpiar el directorio de mensajes");
-            return -1;
-        }
-    }
-    return 0;
-}
-
-// Función para almacenar la tupla
-int set_value(int key, char* value1, int N_value2, double* V_value_2) {
-    if (exists(key)) {
-        printf("La clave ya existe\n");
-        return -1;
-    }
-    else if (N_value2 <= 1 || N_value2 >= 32) {
-        printf("El tamaño del vector no es válido\n");
-        return -1;
-    }
-    else {
-        FILE *file;
-        char path[MAX_STR_LENGTH];
-        // Combinamos el path con la key para obtener el nombre del archivo
-        sprintf(path, "./mensajes/%d.txt", key);
-        // Abrimos el archivo en modo escritura para almacenar la tupla
-        file = fopen(path, "w");
-        // Si no se pudo abrir, retornamos -1
-        if (!file) {
-            printf("No se pudo abrir el archivo");
-            return -1;
-        }
-        // Escribimos la tupla en el archivo
-        fprintf(file, "%s-", value1);
-        fprintf(file, "%d-", N_value2);
-        fprintf(file, "[");
-        for (int i = 0; i < N_value2; i++) {
-            fprintf(file, "%lf,", V_value_2[i]);
-        }
-        // Para eliminar la última coma
-        fseek(file, -1, SEEK_END);  // Mueve el puntero al final del archivo, luego retrocede un carácter
-        int fd = fileno(file);      // Obtiene el descriptor de archivo
-        off_t pos = ftell(file);    // Obtiene la posición actual del puntero del archivo
-        ftruncate(fd, pos);         // Trunca el archivo en la posición actual
-
-        fprintf(file, "]");
-        // Cerramos el archivo
-        fclose(file);
-        return 0;
-
-    }
-}
-
-// Función para obtener la tupla
-int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
-    if (!exists(key)) {
-        printf("La clave no existe\n");
-        return -1;
-    }
-    else {
-        FILE *file;
-        char path[MAX_STR_LENGTH];
-        // Combinamos el path con la key para obtener el nombre del archivo
-        sprintf(path, "./mensajes/%d.txt", key);
-        // Abrimos el archivo en modo lectura para leer la tupla
-        file = fopen(path, "r");
-        // Si no se pudo abrir, retornamos -1
-        if (!file) {
-            printf("No se pudo abrir el archivo");
-            return -1;
-        }
-        // Leemos la tupla del archivo
-        fscanf(file, "%[^-]-%d-[", value1, N_value2);
-        for (int i = 0; i < *N_value2; i++) {
-            fscanf(file, "%lf,", &V_value_2[i]);
-        }
-        // Cerramos el archivo
-        fclose(file);
-        return 0;
-    }
-}
-
-// Función para eliminar la tupla
-int delete_key(int key) {
-    if (!exists(key)) {
-        printf("La clave no existe\n");
-        return -1;
-    }
-    else {
-        char path[MAX_STR_LENGTH];
-        // Combinamos el path con la key para obtener el nombre del archivo
-        sprintf(path, "./mensajes/%d.txt", key);
-        // Eliminamos el archivo
-        remove(path);
-        return 0;
-    }
-}
-
-// Función para modificar la tupla
-int modify_value(int key, char* value1, int N_value2, double* V_value_2) {
-    if (!exists(key)) {
-        printf("La clave no existe\n");
-        return -1;
-    }
-    else if (N_value2 <= 1 || N_value2 >= 32) {
-        printf("El tamaño del vector no es válido\n");
-        return -1;
-    }
-    else {
-        FILE *file;
-        char path[MAX_STR_LENGTH];
-        // Combinamos el path con la key para obtener el nombre del archivo
-        sprintf(path, "./mensajes/%d.txt", key);
-        // Abrimos el archivo en modo escritura para modificar la tupla
-        file = fopen(path, "w");
-        // Si no se pudo abrir, retornamos -1
-        if (!file) {
-            printf("No se pudo abrir el archivo");
-            return -1;
-        }
-        // Escribimos la tupla en el archivo
-        fprintf(file, "%s-", value1);
-        fprintf(file, "%d-", N_value2);
-        fprintf(file, "[");
-        for (int i = 0; i < N_value2; i++) {
-            fprintf(file, "%lf,", V_value_2[i]);
-        }
-        // Para eliminar la última coma
-        fseek(file, -1, SEEK_END);  // Mueve el puntero al final del archivo, luego retrocede un carácter
-        int fd = fileno(file);      // Obtiene el descriptor de archivo
-        off_t pos = ftell(file);    // Obtiene la posición actual del puntero del archivo
-        ftruncate(fd, pos);         // Trunca el archivo en la posición actual
-
-        fprintf(file, "]");
-        // Cerramos el archivo
-        fclose(file);
-        return 0;
-    }
-}
-
-// ----------     FUNCIONES COLAS     ---------- //
+// ----------     FUNCION PRINCIPAL    ---------- //
 
 // Función para ejecutar la operación pedida y enviar la respuesta al cliente
 void procesar_peticion(request* req) {
@@ -395,11 +144,10 @@ void procesar_peticion(request* req) {
     // Enviamos la respuesta al cliente
     mqd_t return_queue = mq_open(
 		req_copy.q_name,	  // Queue name
-		O_CREAT | O_RDONLY,	  // Open flags (O_WRONLY for sender)
+		O_CREAT | O_WRONLY,	  // Open flags (O_WRONLY for sender)
 		S_IRUSR | S_IWUSR,	  // User read/write permission
 		&responseAttributes); // response queue attributes on "claves.h"
     mq_send(return_queue, (char *) &res, sizeof(response), 0);
-    printf("nombre servidor: %s\n", req_copy.q_name);
     mq_close(return_queue);
 }
 

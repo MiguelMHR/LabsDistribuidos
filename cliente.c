@@ -1,4 +1,5 @@
 #include "claves.h"
+#include <stdio.h>
 
 void test_init(){
     printf("🧪 Iniciando pruebas de init()...\n");

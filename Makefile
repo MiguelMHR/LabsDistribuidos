@@ -1,5 +1,5 @@
 CC = gcc
-CPPFLAGS = -I$(INSTALL_PATH)/include -Wall -Wextra 
+CPPFLAGS = -Wall -Wextra -Werror
 LDLIBS = -lrt -lpthread
 LDFLAGS = -L$(INSTALL_PATH)/lib/
 
@@ -12,11 +12,12 @@ dir:
 	$(shell mkdir -p lib)
 # Compilación librería compartida -> libclaves.so
 libclaves: claves.c
-	$(CC) $(LDFLAGS) $(CPPFLAGS) $(LDLIBS) -fPIC -shared $^ -o ./lib/$@.so
+	$(CC) $(LDFLAGS) $(CPPFLAGS) -fPIC -shared $^ -o ./lib/$@.so $(LDLIBS)
 cliente: cliente.c
-	$(CC) $(CPPFLAGS) $(LDLIBS) $^ -o $@.out -L./lib -lclaves -Wl,-rpath=./lib
+	$(CC) $(CPPFLAGS) $^ -o $@.out -L./lib -lclaves -Wl,-rpath=./lib $(LDLIBS)
 servidor: servidor.c 
-	$(CC) $(LDFLAGS) $(CPPFLAGS) $(LDLIBS) $^ -o $@.out    
+	$(CC) $(LDFLAGS) $(CPPFLAGS) $^ -o $@.out $(LDLIBS)
+	  
 
 
 # Limpieza archivos generados

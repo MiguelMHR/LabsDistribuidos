@@ -1,10 +1,27 @@
+// ----------     LIBRERÍAS Y DEFINICIONES     ---------- //
+
 #include "claves.h"
+#include "messages.h"
+
+// Librerías básicas
+#include <fcntl.h>      /* For O_* constants */
+#include <sys/stat.h>   /* For mode constants */
+#include <sys/types.h>  /* For mode constants */
+#include <mqueue.h>     /* For message queue */
+#include <string.h>     /* For strlen, strcpy, sprintf... */
+#include <unistd.h>     /* For sleep */
+#include <pthread.h>    /* For threads */
+#include <stdio.h>      /* For printf */
+#include <stdlib.h>     /* For exit */
+
+// Definiciones básicas
+#define NUM_THREADS 1
 
 // ----------     FUNCIONES COLAS     ---------- //
 
 // Función para abrir las colas de mensajes (cliente y servidor)
 // int open_queues(mqd_t* serverQueue, mqd_t* clientQueue) 
-int open_queues(mqd_t* serverQueue) {
+int open_queues(mqd_t* serverQueue, mqd_t* clientQueue) {
 	// Abrimos la cola del servidor
 	*serverQueue = mq_open(
 		MQ_SERVER,			 // Queue name
@@ -22,16 +39,16 @@ int open_queues(mqd_t* serverQueue) {
     printf("Nombre de la cola del cliente: %s\n", client_file);
 
 	// Abrimos la cola del cliente
-	// *clientQueue = mq_open(
-	// 	client_file,		  // Queue name
-	// 	O_CREAT | O_RDONLY,	  // Open flags (O_WRONLY for sender)
-	// 	S_IRUSR | S_IWUSR,	  // User read/write permission
-	// 	&responseAttributes); // response queue attributes on "claves.h"
+	*clientQueue = mq_open(
+		client_file,		  // Queue name
+		O_CREAT | O_WRONLY,	  // Open flags (O_WRONLY for sender)
+		S_IRUSR | S_IWUSR,	  // User read/write permission
+		&responseAttributes); // response queue attributes on "claves.h"
 
-	// if (*clientQueue == -1){
-	// 	printf("No se pudo abrir la cola del cliente");
-	// 	return -1; // return -1 if the queue was not created 
-    // }
+	if (*clientQueue == -1){
+		printf("No se pudo abrir la cola del cliente");
+		return -1; // return -1 if the queue was not created 
+    }
 	return 0;
 }
 
@@ -40,17 +57,11 @@ int init() {
     // Inicializar las colas de mensajes
     mqd_t server_queue;
     mqd_t client_queue;
-    open_queues(&server_queue);
+    open_queues(&server_queue, &client_queue);
 
     // Crear la petición para el servidor
     request req;
     req.operation = 1;
-    sprintf(req.q_name, "/CLIENTE");
-    client_queue = mq_open(
-		req.q_name,		  // Queue name
-		O_CREAT | O_RDONLY,	  // Open flags (O_WRONLY for sender)
-		S_IRUSR | S_IWUSR,	  // User read/write permission
-		&responseAttributes); // response queue attributes on "claves.h"
     // Enviamos la petición al servidor
     int send_request = mq_send(server_queue, (char *) &req, sizeof(request), 0);
     if (send_request == -1) {
@@ -80,7 +91,7 @@ int set_value(int key, char* value1, int N_value2, double* V_value_2) {
     // Inicializar las colas de mensajes
     mqd_t server_queue;
     mqd_t client_queue;
-    open_queues(&server_queue);
+    open_queues(&server_queue, &client_queue);
 
     if (N_value2 <= 1 || N_value2 >= 32) {
         printf("El tamaño del vector no es válido\n");
@@ -96,7 +107,6 @@ int set_value(int key, char* value1, int N_value2, double* V_value_2) {
     for (int i = 0; i < N_value2; i++) {
         req.V_value_2[i] = V_value_2[i];
     }
-    sprintf(req.q_name, "/mq_client_%ld", pthread_self());
     // Enviamos la petición al servidor
     int send_request = mq_send(server_queue, (char *) &req, sizeof(request), 0);
     if (send_request == -1) {
@@ -106,7 +116,6 @@ int set_value(int key, char* value1, int N_value2, double* V_value_2) {
 
     // Recibir la respuesta del servidor
     response res;
-    printf("Nombre de la cola del cliente: %s\n", req.q_name);
     int receive_response = mq_receive(client_queue, (char *) &res, sizeof(response), NULL);
     printf("Recibiendo respuesta del servidor\n");
     if (receive_response == -1) {
@@ -127,7 +136,7 @@ int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
     // Inicializar las colas de mensajes
     mqd_t server_queue;
     mqd_t client_queue;
-    open_queues(&server_queue);
+    open_queues(&server_queue, &client_queue);
 
     if (*N_value2 <= 1 || *N_value2 >= 32) {
         printf("El tamaño del vector no es válido\n");
@@ -179,7 +188,7 @@ int modify_value(int key, char* value1, int N_value2, double* V_value_2) {
     // Inicializar las colas de mensajes
     mqd_t server_queue;
     mqd_t client_queue;
-    open_queues(&server_queue);
+    open_queues(&server_queue, &client_queue);
 
     if (N_value2 <= 1 || N_value2 >= 32) {
         printf("El tamaño del vector no es válido\n");
@@ -231,7 +240,7 @@ int delete_key(int key) {
     // Inicializar las colas de mensajes
     mqd_t server_queue;
     mqd_t client_queue;
-    open_queues(&server_queue);
+    open_queues(&server_queue, &client_queue);
 
     // Crear la petición para el servidor
     request req;
@@ -266,7 +275,7 @@ int exist(int key) {
     // Inicializar las colas de mensajes
     mqd_t server_queue;
     mqd_t client_queue;
-    open_queues(&server_queue);
+    open_queues(&server_queue, &client_queue);
 
     // Crear la petición para el servidor
     request req;
