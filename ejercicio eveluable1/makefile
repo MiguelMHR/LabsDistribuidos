@@ -1,31 +1,26 @@
-BIN_FILES  = test client server
-
 CC = gcc
+CFLAGS = -Wall -Wextra -fPIC
+LDFLAGS = -shared
 
+all: servidor cliente libclaves.so
 
-CFLAGS =	-Wall  -g
+servidor: servidor.o
+	$(CC) $(CFLAGS) -o servidor servidor.o -ldl -pthread
 
-LDFLAGS = -L$(INSTALL_PATH)/lib/
-LDLIBS = -lpthread
+cliente: funclientes.o
+	$(CC) $(CFLAGS) -o cliente funclientes.o
 
+libclaves.so: claves.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o libclaves.so claves.o
 
-all: $(BIN_FILES)
-.PHONY : all
+servidor.o: servidor.c
+	$(CC) $(CFLAGS) -c servidor.c
 
-clave: clave.o clave.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
+claves.o: claves.c claves.h
+	$(CC) $(CFLAGS) -c -o claves.o claves.c
 
-cliente: clientes.o clave.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
-
-servidor: servidor.o clave.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
-
-%.o: %.c
-	$(CC) $(CFLAGS) $(CFLAGS) -c $<
+funclientes.o: funclientes.c
+	$(CC) $(CFLAGS) -c funclientes.c
 
 clean:
-	rm -f $(BIN_FILES) *.o
-
-.SUFFIXES:
-.PHONY : clean
+	rm -f *.o *.so servidor cliente

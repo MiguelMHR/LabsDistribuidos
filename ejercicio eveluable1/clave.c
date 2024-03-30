@@ -10,11 +10,19 @@
 #include <dirent.h>
 #include <errno.h>
 
-
 #define DIRECTORIO "clientes"
 #define KEY_MAX 32
 #define MAX_VALUE1 256
 #define MAX_VALUE2 32
+
+struct respuesta
+{
+    int respuesta; 
+    int key;
+    char *value1[256];
+    int N_value2; 
+    double *V_value2;
+};
 
 int crearDirectorio() {
 
@@ -118,59 +126,61 @@ int set_value(int key, char *value1, int N_value2, double *V_value2){
 }
 
 int get_value(int key, char *value1, int *N_value2, double *V_value2) {
-    
-    if (exist(key) == 1) {
+    struct respuesta resp;
+    resp.respuesta = -1; // Por defecto, respuesta de error
 
-        char nombre_archivo[KEY_MAX + strlen(DIRECTORIO)]; // Tamaño de un int + el nombre del directorio
-        sprintf(nombre_archivo, "%s/%i.txt", DIRECTORIO, key); // Genera el nombre del archivo usando la key
+    if (exist(key) == 1) {
+        char nombre_archivo[KEY_MAX + strlen(DIRECTORIO)]; // Tamaño de un int + longitud del nombre del directorio
+        sprintf(nombre_archivo, "%s/%i.txt", DIRECTORIO, key); // Genera el nombre del archivo usando la clave
+
         FILE *archivo;
-        archivo = fopen(nombre_archivo, "r"); 
-        
+        archivo = fopen(nombre_archivo, "r");
+
         if (archivo == NULL) {
             // No se pudo abrir el archivo
-            return -1;
+            return resp;
         }
 
         // Lee los valores del archivo
-        if (fscanf(archivo, "%d", &key) != 1) {
-            // Error al leer el valor key
+        if (fscanf(archivo, "%d", &(resp.key)) != 1) {
+            // Error al leer el valor de la clave
             fclose(archivo);
-            return -1;
+            return resp;
         }
 
-        if (fgets(value1, MAX_VALUE1, archivo) == NULL) {
-            // Error al leer el valor value1
+        if (fgets(resp.value1, MAX_VALUE1, archivo) == NULL) {
+            // Error al leer value1
             fclose(archivo);
-            return -1;
+            return resp;
         }
 
-        if (fscanf(archivo, "%d", N_value2) != 1) {
-            // Error al leer el valor N_value2
+        if (fscanf(archivo, "%d", &(resp.N_value2)) != 1) {
+            // Error al leer N_value2
             fclose(archivo);
-            return -1;
+            return resp;
         }
 
-        if (*N_value2 < 1 || *N_value2 > MAX_VALUE2) {
+        if (resp.N_value2 < 1 || resp.N_value2 > MAX_VALUE2) {
             // N_value2 fuera de rango
             fclose(archivo);
-            return -1;
+            return resp;
         }
 
-        for (int i = 0; i < *N_value2; i++) {
-            if (fscanf(archivo, "%lf", &V_value2[i]) != 1) {
+        for (int i = 0; i < resp.N_value2; i++) {
+            if (fscanf(archivo, "%lf", &(resp.V_value2[i])) != 1) {
                 // Error al leer los valores de V_value2
                 fclose(archivo);
-                return -1;
+                return resp;
             }
         }
 
         fclose(archivo);
         // Lectura exitosa
-        return 0; 
-    } 
-    else {
+        resp.respuesta = 0;
+        return resp;
+    } else {
         // El archivo no existe
-        return -1; 
+        return resp;
     }
 }
 
