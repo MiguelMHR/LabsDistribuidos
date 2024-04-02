@@ -18,11 +18,13 @@ int failed_sem = 0; // Variable para controlar la ejecución del semáforo
 sem_t escritor;
 int sem_iniciado = 0; // Variable para controlar la inicialización del semáforo
 int n_lectores = 0; // Variable para controlar el número de lectores
+int error_mqueue = 0; // Variable para controlar errores en la cola de mensajes
 
 // ----------     FUNCIONES AUXILIARES     ---------- //
 
 // Función para inicializar el semáforo de forma segura
 void init_sem() {
+    printf("[comms][server] Inicializando semáforo\n");
     pthread_mutex_lock(&mutex_lectura);
     if (sem_iniciado == 0) {
         sem_init(&escritor, 0, 1);
@@ -30,6 +32,8 @@ void init_sem() {
     }
     pthread_mutex_unlock(&mutex_lectura);
 }
+
+//TODO: Hacer una open_queues en el servidor para que funcione el mq_unlink del servidor
 
 // ----------     FUNCION PRINCIPAL    ---------- //
 
@@ -147,9 +151,29 @@ void procesar_peticion(request* req) {
 		O_CREAT | O_WRONLY,	  // Open flags (O_WRONLY for sender)
 		S_IRUSR | S_IWUSR,	  // User read/write permission
 		&responseAttributes); // response queue attributes on "claves.h"
-    mq_send(return_queue, (char *) &res, sizeof(response), 0);
-    mq_close(return_queue);
-}
+    if (return_queue == -1) {
+        perror("No se pudo abrir la cola servidor-cliente");
+        return;
+    }
+    printf("[comms][server] Enviando respuesta al cliente\n");
+    error_mqueue = mq_send(return_queue, (char *)&res, sizeof(response), 0);
+    printf("[comms][server] Nombre de la cola servidor-cliente: %s\n", req_copy.q_name);
+    if (error_mqueue == -1) {
+        perror("No se pudo enviar la respuesta al cliente");
+        if (mq_close(return_queue)==-1) {
+            perror("No se pudo cerrar la cola servidor-cliente");
+            return;
+        }
+        return;
+    }
+    printf("[comms][server] Respuesta enviada\n");
+    printf("[comms][server] Cerrando cola servidor-cliente\n");
+    if (mq_close(return_queue)== -1) {
+        perror("No se pudo cerrar la cola servidor-cliente");
+        return;
+    }
+    return;
+};
 
 // ----------     FUNCIÓN MAIN     ---------- //
 int main(){
@@ -172,11 +196,25 @@ int main(){
             S_IRUSR | S_IWUSR,   // User read/write permission
             &requestAttributes); // Assign queue attributes
 
+        if (cliente == -1) {
+            perror("No se pudo abrir la cola cliente-servidor");
+            return -1;
+        }
         // * Request (message)
         request req;
 
         // * Receive the message
-        mq_receive(cliente, (char *)&req, sizeof(request), NULL);                   
+        printf("[comms][server] Esperando petición del cliente\n");
+        error_mqueue = mq_receive(cliente, (char *)&req, sizeof(request), NULL); 
+        if (error_mqueue == -1) {
+            perror("No se pudo recibir la petición del cliente");
+            if (mq_close(cliente) == -1) {
+                perror("No se pudo cerrar la cola cliente-servidor");
+                return -1;
+            }
+            return -1;
+        }
+        printf("[comms][server] Petición recibida\n");                  
         // ! We create a thread for each request and execute the function deal_with_request
         pthread_t thread; // create threads to handle the requests as they come in
 

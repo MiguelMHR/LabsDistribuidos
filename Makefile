@@ -16,11 +16,10 @@ libclaves: claves.c
 cliente: cliente.c
 	$(CC) $(CPPFLAGS) $^ -o $@.out -L./lib -lclaves -Wl,-rpath=./lib $(LDLIBS)
 servidor: servidor.c 
-	$(CC) $(LDFLAGS) $(CPPFLAGS) $^ -o $@.out $(LDLIBS)
-	  
+	$(CC) $(LDFLAGS) $(CPPFLAGS) $^ -o $@.out $(LDLIBS)  
 
 
 # Limpieza archivos generados
 clean:
-	rm -f *.o *.so ./lib/*.so *.out -d ./lib
+	rm -f *.o *.so ./lib/*.so *.out -d ./lib ./mensajes/* ./mensajes
 	@if [ ! -z "$(shell ls -A /dev/mqueue)" ]; then rm /dev/mqueue/*; fi

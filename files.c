@@ -16,13 +16,14 @@
 
 // Función para limpiar el directorio de mensajes
 int clean_directory(const char *dirname) {
+    printf("[files][server] Limpiando directorio de mensajes\n");
     DIR *dir;
     struct dirent *entry;
     char path[MAX_STR_LENGTH];
 
     dir = opendir(dirname);
     if (dir == NULL) {
-        printf("Error al abrir el directorio");
+        perror("Error al abrir el directorio");
         return -1;
     }
 
@@ -41,6 +42,7 @@ int clean_directory(const char *dirname) {
 
 // Función para comprobar la existencia del mensaje
 int exists(int key) {
+    printf("[files][server] Comprobando existencia de la clave %d\n", key);
     FILE *file;
     char path[MAX_STR_LENGTH];
     // Combinamos el path con la key para obtener el nombre del archivo
@@ -49,29 +51,32 @@ int exists(int key) {
     file = fopen(path, "r");
     // Si no existe, retornamos 0
     if (file==NULL) {
+        printf("La clave no existe\n");
         return 0;
     }
     // Si existe, retornamos 1 y cerramos archivo
     fclose(file);
+    printf("La clave existe\n");
     return 1;
 }
 
 // Función para reiniciar el directorio de mensajes
 int init(){
+    printf("[files][server] Inicializando directorio de mensajes\n");
     const char *dirname = "./mensajes";
 
     // Si no está creado, lo creamos
     if (fopen(dirname, "r") == NULL) {
         // Si no se pudo crear, retornamos -1
         if (mkdir(dirname, 0777) == -1) {
-            printf("No se pudo crear el directorio de mensajes");
+            perror("No se pudo crear el directorio de mensajes");
             return -1;
         }
     } 
     // Si ya existe, lo limpiamos
     else {    
         if (clean_directory(dirname) == -1) {
-            printf("No se pudo limpiar el directorio de mensajes");
+            printf("No se pudo limpiar el directorio de mensajes\n");
             return -1;
         }
     }
@@ -80,8 +85,10 @@ int init(){
 
 // Función para almacenar la tupla
 int set_value(int key, char* value1, int N_value2, double* V_value_2) {
+    printf("[files][server] Almacenando tupla con clave %d\n", key);
     if (exists(key)) {
         printf("La clave ya existe\n");
+        printf("No se puede realizar la operación\n");
         return -1;
     }
     else if (N_value2 <= 1 || N_value2 >= 32) {
@@ -89,6 +96,7 @@ int set_value(int key, char* value1, int N_value2, double* V_value_2) {
         return -1;
     }
     else {
+        printf("Se puede realizar la operación\n");
         FILE *file;
         char path[MAX_STR_LENGTH];
         // Combinamos el path con la key para obtener el nombre del archivo
@@ -97,7 +105,7 @@ int set_value(int key, char* value1, int N_value2, double* V_value_2) {
         file = fopen(path, "w");
         // Si no se pudo abrir, retornamos -1
         if (!file) {
-            printf("No se pudo abrir el archivo");
+            perror("No se pudo abrir el archivo");
             return -1;
         }
         // Escribimos la tupla en el archivo
@@ -117,12 +125,12 @@ int set_value(int key, char* value1, int N_value2, double* V_value_2) {
         // Cerramos el archivo
         fclose(file);
         return 0;
-
     }
 }
 
 // Función para obtener la tupla
 int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
+    printf("[files][server] Obteniendo tupla con clave %d\n", key);
     if (!exists(key)) {
         printf("La clave no existe\n");
         return -1;
@@ -136,7 +144,7 @@ int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
         file = fopen(path, "r");
         // Si no se pudo abrir, retornamos -1
         if (!file) {
-            printf("No se pudo abrir el archivo");
+            perror("No se pudo abrir el archivo");
             return -1;
         }
         // Leemos la tupla del archivo
@@ -152,6 +160,7 @@ int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
 
 // Función para eliminar la tupla
 int delete_key(int key) {
+    printf("[files][server] Eliminando tupla con clave %d\n", key);
     if (!exists(key)) {
         printf("La clave no existe\n");
         return -1;
@@ -168,6 +177,7 @@ int delete_key(int key) {
 
 // Función para modificar la tupla
 int modify_value(int key, char* value1, int N_value2, double* V_value_2) {
+    printf("[files][server] Modificando tupla con clave %d\n", key);
     if (!exists(key)) {
         printf("La clave no existe\n");
         return -1;
@@ -185,7 +195,7 @@ int modify_value(int key, char* value1, int N_value2, double* V_value_2) {
         file = fopen(path, "w");
         // Si no se pudo abrir, retornamos -1
         if (!file) {
-            printf("No se pudo abrir el archivo");
+            perror("No se pudo abrir el archivo");
             return -1;
         }
         // Escribimos la tupla en el archivo
