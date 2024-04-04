@@ -172,6 +172,7 @@ void procesar_peticion(request* req) {
         perror("No se pudo cerrar la cola servidor-cliente");
         return;
     }
+    
     return;
 };
 
