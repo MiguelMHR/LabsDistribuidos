@@ -36,7 +36,7 @@ int  main(int argc, char **argv)  // en argv[1] == servidor
 		return -1;
 	}
 
-   	memcpy (&(server_addr.sin_addr), hp->h_addr, hp->h_length);
+   	memcpy (&(server_addr.sin_addr), hp->h_addr_list[0], hp->h_length);
    	server_addr.sin_family  = AF_INET;
    	server_addr.sin_port    = htons(4200);
    	
