@@ -4,11 +4,70 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <pthread.h>
 #include "claves.h" // Incluir las funciones definidas en claves.c
 
-#define SERVER_PORT 7080
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 5 // Número máximo de hilos (clientes) que pueden ejecutarse simultáneamente
 #define MAX_MSG_SIZE 256
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex para proteger el acceso a las claves
+pthread_cond_t cond_cp = PTHREAD_COND_INITIALIZER; // Condition variable para esperar hasta que se haya copiado
+
+int is_copied = 0; // Variable que indica si se ha copiado
+
+// Función para escribir todos los datos al socket
+int write_all(int client_socket, char *buffer, size_t total) {
+    size_t escritos = 0;
+    ssize_t result = 0;
+
+    while (escritos != total) {
+        result = write(client_socket, buffer + escritos, total - escritos);
+        if (-1 == result) {
+            return -1;
+        }
+        escritos += result;
+    }
+    return escritos;
+}
+
+// Función para leer todos los datos del socket
+int read_all(int client_socket, char *buffer, size_t total) {
+    size_t leidos = 0;
+    ssize_t result = 0;
+
+    while (leidos != total) {
+        result = read(client_socket, buffer + leidos, total - leidos);
+        if (-1 == result) {
+            return -1;
+        }
+        if (result == 0) {
+            break;
+        }
+        leidos += result;
+    }
+    return leidos;
+}
+
+// Función para manejar la solicitud de un cliente
+void *handle_client(void *arg) {
+    int client_socket = *((int *)arg);
+    char request[MAX_MSG_SIZE];
+
+    // Leer la solicitud del cliente
+    if (read_all(client_socket, request, MAX_MSG_SIZE) < 0) {
+        perror("Error al leer la solicitud del cliente");
+        close(client_socket);
+        pthread_exit(NULL);
+    }
+
+    pthread_mutex_lock(&mutex) ;
+    is_copied = 1 ;
+    pthread_cond_signal(&copied) ;
+    pthread_mutex_unlock(&mutex) ;
+
+    close(client_socket);
+    pthread_exit(NULL);
+}
 
 // Función para manejar la solicitud de un cliente
 void handle_client_request(int client_socket, const char *request) {
@@ -26,7 +85,9 @@ void handle_client_request(int client_socket, const char *request) {
         int result = init();
         // Enviar la respuesta al cliente
         snprintf(response, MAX_MSG_SIZE, "%d", result);
-        send(client_socket, response, strlen(response), 0);
+        if (write_all(client_socket, response, strlen(response)) < 0) {
+            perror("Error al enviar la respuesta al cliente");
+        }
     } else if (strcmp(token, "set") == 0) {
         // Llamar a la función set_value de claves.c con los argumentos adecuados
         // Obtener los argumentos
@@ -41,7 +102,9 @@ void handle_client_request(int client_socket, const char *request) {
         free(V_value2);
         // Enviar la respuesta al cliente
         snprintf(response, MAX_MSG_SIZE, "%d", result);
-        send(client_socket, response, strlen(response), 0);
+        if (write_all(client_socket, response, strlen(response)) < 0) {
+            perror("Error al enviar la respuesta al cliente");
+        }
     } else if (strcmp(token, "get") == 0) {
         // Llamar a la función get_value de claves.c con el argumento adecuado
         // Obtener el argumento
@@ -53,14 +116,20 @@ void handle_client_request(int client_socket, const char *request) {
         // Enviar la respuesta al cliente
         if (result == 0) {
             snprintf(response, MAX_MSG_SIZE, "%s|%d", value1, N_value2);
-            send(client_socket, response, strlen(response), 0);
+            if (write_all(client_socket, response, strlen(response)) < 0) {
+                perror("Error al enviar la respuesta al cliente");
+            }
             for (int i = 0; i < N_value2; i++) {
                 snprintf(response, MAX_MSG_SIZE, "%f", V_value2[i]);
-                send(client_socket, response, strlen(response), 0);
+                if (write_all(client_socket, response, strlen(response)) < 0) {
+                    perror("Error al enviar la respuesta al cliente");
+                }
             }
         } else {
             snprintf(response, MAX_MSG_SIZE, "%d", result);
-            send(client_socket, response, strlen(response), 0);
+            if (write_all(client_socket, response, strlen(response)) < 0) {
+                perror("Error al enviar la respuesta al cliente");
+            }
         }
         free(V_value2);
     } else if (strcmp(token, "delete") == 0) {
@@ -70,7 +139,9 @@ void handle_client_request(int client_socket, const char *request) {
         int result = delete_key(atoi(key));
         // Enviar la respuesta al cliente
         snprintf(response, MAX_MSG_SIZE, "%d", result);
-        send(client_socket, response, strlen(response), 0);
+        if (write_all(client_socket, response, strlen(response)) < 0) {
+            perror("Error al enviar la respuesta al cliente");
+        }
     } else if (strcmp(token, "modify") == 0) {
         // Llamar a la función modify_value de claves.c con los argumentos adecuados
         // Obtener los argumentos
@@ -85,7 +156,9 @@ void handle_client_request(int client_socket, const char *request) {
         free(V_value2);
         // Enviar la respuesta al cliente
         snprintf(response, MAX_MSG_SIZE, "%d", result);
-        send(client_socket, response, strlen(response), 0);
+        if (write_all(client_socket, response, strlen(response)) < 0) {
+            perror("Error al enviar la respuesta al cliente");
+        }
     } else if (strcmp(token, "exist") == 0) {
         // Llamar a la función exist de claves.c con el argumento adecuado
         // Obtener el argumento
@@ -93,20 +166,37 @@ void handle_client_request(int client_socket, const char *request) {
         int result = exist(atoi(key));
         // Enviar la respuesta al cliente
         snprintf(response, MAX_MSG_SIZE, "%d", result);
-        send(client_socket, response, strlen(response), 0);
+        if (write_all(client_socket, response, strlen(response)) < 0) {
+            perror("Error al enviar la respuesta al cliente");
+        }
     } else {
         perror("Comando no reconocido");
     }
 }
 
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Uso: %s <puerto>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
-int main() {
+    int port = atoi(argv[1]);
+
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     pthread_t tid[MAX_CLIENTS];
     int i = 0;
 
+    // Inicializar mutex y condición
+    if (pthread_mutex_init(&mutex, NULL) != 0) {
+        perror("Error al inicializar el mutex");
+        exit(EXIT_FAILURE);
+    }
+    if (pthread_cond_init(&cond_cp, NULL) != 0) {
+        perror("Error al inicializar la variable de condición");
+        exit(EXIT_FAILURE);
+    }
     // Crear el socket del servidor
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("Error al crear el socket del servidor");
@@ -114,9 +204,10 @@ int main() {
     }
 
     // Configurar la dirección del servidor
+    memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(SERVER_PORT);
+    server_addr.sin_port = htons(port);
 
     // Enlazar el socket del servidor a la dirección y puerto especificados
     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
@@ -130,7 +221,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Servidor iniciado. Esperando conexiones de clientes...\n");
+    printf("Servidor iniciado en el puerto %d. Esperando conexiones de clientes...\n", port);
 
     // Aceptar conexiones de clientes y manejarlas en hilos separados
     while (1) {
@@ -147,6 +238,14 @@ int main() {
             continue;
         }
 
+        // wait data is copied
+        pthread_mutex_lock(&mutex) ;
+        while (!is_copied) {
+            pthread_cond_wait(&copied, &mutex) ;
+        }
+        is_copied = 0 ;
+        pthread_mutex_unlock(&mutex) ;
+
         // Limpiar el array de hilos si es necesario
         if (i >= MAX_CLIENTS) {
             i = 0;
@@ -162,6 +261,10 @@ int main() {
 
     // Cerrar el socket del servidor (este código nunca se ejecutará)
     close(server_socket);
+    
+    // Destruir mutex y condición
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&cond_cp);
 
     return 0;
 }
