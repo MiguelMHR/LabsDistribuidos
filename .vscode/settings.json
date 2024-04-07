@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.rmd": "markdown",
+        "semaphore.h": "c",
+        "lines.h": "c"
+    }
+}

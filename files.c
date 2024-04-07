@@ -16,7 +16,7 @@
 
 // Función para limpiar el directorio de mensajes
 int clean_directory(const char *dirname) {
-    printf("[files][server] Limpiando directorio de mensajes\n");
+    printf("\n[files][server] Limpiando directorio de mensajes\n");
     DIR *dir;
     struct dirent *entry;
     char path[MAX_STR_LENGTH];
@@ -35,6 +35,7 @@ int clean_directory(const char *dirname) {
         }
     }
     closedir(dir);
+    printf("[files][server] Se limpió el directorio de mensajes\n\n");
     return 0;
 }
 
@@ -42,7 +43,7 @@ int clean_directory(const char *dirname) {
 
 // Función para comprobar la existencia del mensaje
 int exists(int key) {
-    printf("[files][server] Comprobando existencia de la clave %d\n", key);
+    printf("\n[files][server] Comprobando existencia de la clave %d\n", key);
     FILE *file;
     char path[MAX_STR_LENGTH];
     // Combinamos el path con la key para obtener el nombre del archivo
@@ -51,18 +52,18 @@ int exists(int key) {
     file = fopen(path, "r");
     // Si no existe, retornamos 0
     if (file==NULL) {
-        printf("La clave no existe\n");
+        printf("[files][server] La clave no existe\n\n");
         return 0;
     }
     // Si existe, retornamos 1 y cerramos archivo
     fclose(file);
-    printf("La clave existe\n");
+    printf("[files][server] La clave existe\n\n");
     return 1;
 }
 
 // Función para reiniciar el directorio de mensajes
 int init(){
-    printf("[files][server] Inicializando directorio de mensajes\n");
+    printf("\n[files][server] Inicializando directorio de mensajes\n");
     const char *dirname = "./mensajes";
 
     // Si no está creado, lo creamos
@@ -80,23 +81,22 @@ int init(){
             return -1;
         }
     }
+    printf("[files][server] Directorio de mensajes inicializado\n\n");
     return 0;
 }
 
 // Función para almacenar la tupla
 int set_value(int key, char* value1, int N_value2, double* V_value_2) {
-    printf("[files][server] Almacenando tupla con clave %d\n", key);
+    printf("\n[files][server] Almacenando tupla con clave %d\n", key);
     if (exists(key)) {
-        printf("La clave ya existe\n");
-        printf("No se puede realizar la operación\n");
+        printf("[files][server] La clave ya existe\n\n");
         return -1;
     }
     else if (N_value2 <= 1 || N_value2 >= 32) {
-        printf("El tamaño del vector no es válido\n");
+        printf("El tamaño del vector no es válido\n\n");
         return -1;
     }
     else {
-        printf("Se puede realizar la operación\n");
         FILE *file;
         char path[MAX_STR_LENGTH];
         // Combinamos el path con la key para obtener el nombre del archivo
@@ -124,15 +124,16 @@ int set_value(int key, char* value1, int N_value2, double* V_value_2) {
         fprintf(file, "]");
         // Cerramos el archivo
         fclose(file);
+        printf("[files][server] Se almacenó la tupla\n\n");
         return 0;
     }
 }
 
 // Función para obtener la tupla
 int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
-    printf("[files][server] Obteniendo tupla con clave %d\n", key);
+    printf("\n[files][server] Obteniendo tupla con clave %d\n", key);
     if (!exists(key)) {
-        printf("La clave no existe\n");
+        printf("La clave no existe\n\n");
         return -1;
     }
     else {
@@ -154,15 +155,16 @@ int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
         }
         // Cerramos el archivo
         fclose(file);
+        printf("[files][server] Se obtuvo la tupla\n\n");
         return 0;
     }
 }
 
 // Función para eliminar la tupla
 int delete_key(int key) {
-    printf("[files][server] Eliminando tupla con clave %d\n", key);
+    printf("\n[files][server] Eliminando tupla con clave %d\n", key);
     if (!exists(key)) {
-        printf("La clave no existe\n");
+        printf("La clave no existe\n\n");
         return -1;
     }
     else {
@@ -171,15 +173,16 @@ int delete_key(int key) {
         sprintf(path, "./mensajes/%d.txt", key);
         // Eliminamos el archivo
         remove(path);
+        printf("[files][server] Se eliminó la tupla\n\n");
         return 0;
     }
 }
 
 // Función para modificar la tupla
 int modify_value(int key, char* value1, int N_value2, double* V_value_2) {
-    printf("[files][server] Modificando tupla con clave %d\n", key);
+    printf("\n[files][server] Modificando tupla con clave %d\n", key);
     if (!exists(key)) {
-        printf("La clave no existe\n");
+        printf("La clave no existe\n\n");
         return -1;
     }
     else if (N_value2 <= 1 || N_value2 >= 32) {
@@ -214,6 +217,7 @@ int modify_value(int key, char* value1, int N_value2, double* V_value_2) {
         fprintf(file, "]");
         // Cerramos el archivo
         fclose(file);
+        printf("[files][server] Se modificó la tupla\n\n");
         return 0;
     }
 }
