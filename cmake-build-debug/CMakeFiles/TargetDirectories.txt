@@ -1,3 +1,0 @@
-C:/Users/2002k/Desktop/c++/LabsDistribuidos/cmake-build-debug/CMakeFiles/LabsDistribuidos.dir
-C:/Users/2002k/Desktop/c++/LabsDistribuidos/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/2002k/Desktop/c++/LabsDistribuidos/cmake-build-debug/CMakeFiles/rebuild_cache.dir
