@@ -17,58 +17,58 @@
 #endif
 
 int
-_init_1 (void  *argp, void *result, struct svc_req *rqstp)
+_init_tuplas_1 (void  *argp, void *result, struct svc_req *rqstp)
 {
-	return (init_1_svc(result, rqstp));
+	return (init_tuplas_1_svc(result, rqstp));
 }
 
 int
-_set_value_1 (message  *argp, void *result, struct svc_req *rqstp)
+_set_value_tuplas_1 (message  *argp, void *result, struct svc_req *rqstp)
 {
-	return (set_value_1_svc(*argp, result, rqstp));
+	return (set_value_tuplas_1_svc(*argp, result, rqstp));
 }
 
 int
-_get_value_1 (int  *argp, void *result, struct svc_req *rqstp)
+_get_value_tuplas_1 (int  *argp, void *result, struct svc_req *rqstp)
 {
-	return (get_value_1_svc(*argp, result, rqstp));
+	return (get_value_tuplas_1_svc(*argp, result, rqstp));
 }
 
 int
-_modify_value_1 (message  *argp, void *result, struct svc_req *rqstp)
+_modify_value_tuplas_1 (message  *argp, void *result, struct svc_req *rqstp)
 {
-	return (modify_value_1_svc(*argp, result, rqstp));
+	return (modify_value_tuplas_1_svc(*argp, result, rqstp));
 }
 
 int
-_delete_key_1 (int  *argp, void *result, struct svc_req *rqstp)
+_delete_key_tuplas_1 (int  *argp, void *result, struct svc_req *rqstp)
 {
-	return (delete_key_1_svc(*argp, result, rqstp));
+	return (delete_key_tuplas_1_svc(*argp, result, rqstp));
 }
 
 int
-_exist_1 (int  *argp, void *result, struct svc_req *rqstp)
+_exist_tuplas_1 (int  *argp, void *result, struct svc_req *rqstp)
 {
-	return (exist_1_svc(*argp, result, rqstp));
+	return (exist_tuplas_1_svc(*argp, result, rqstp));
 }
 
 static void
 tuplas_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
-		message set_value_1_arg;
-		int get_value_1_arg;
-		message modify_value_1_arg;
-		int delete_key_1_arg;
-		int exist_1_arg;
+		message set_value_tuplas_1_arg;
+		int get_value_tuplas_1_arg;
+		message modify_value_tuplas_1_arg;
+		int delete_key_tuplas_1_arg;
+		int exist_tuplas_1_arg;
 	} argument;
 	union {
-		int init_1_res;
-		int set_value_1_res;
-		message get_value_1_res;
-		int modify_value_1_res;
-		int delete_key_1_res;
-		int exist_1_res;
+		int init_tuplas_1_res;
+		int set_value_tuplas_1_res;
+		message get_value_tuplas_1_res;
+		int modify_value_tuplas_1_res;
+		int delete_key_tuplas_1_res;
+		int exist_tuplas_1_res;
 	} result;
 	bool_t retval;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -79,40 +79,40 @@ tuplas_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
 		return;
 
-	case init:
+	case init_tuplas:
 		_xdr_argument = (xdrproc_t) xdr_void;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_init_1;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_init_tuplas_1;
 		break;
 
-	case set_value:
+	case set_value_tuplas:
 		_xdr_argument = (xdrproc_t) xdr_message;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_set_value_1;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_set_value_tuplas_1;
 		break;
 
-	case get_value:
+	case get_value_tuplas:
 		_xdr_argument = (xdrproc_t) xdr_int;
 		_xdr_result = (xdrproc_t) xdr_message;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_get_value_1;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_get_value_tuplas_1;
 		break;
 
-	case modify_value:
+	case modify_value_tuplas:
 		_xdr_argument = (xdrproc_t) xdr_message;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_modify_value_1;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_modify_value_tuplas_1;
 		break;
 
-	case delete_key:
+	case delete_key_tuplas:
 		_xdr_argument = (xdrproc_t) xdr_int;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_delete_key_1;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_delete_key_tuplas_1;
 		break;
 
-	case exist:
+	case exist_tuplas:
 		_xdr_argument = (xdrproc_t) xdr_int;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (bool_t (*) (char *, void *,  struct svc_req *))_exist_1;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_exist_tuplas_1;
 		break;
 
 	default:

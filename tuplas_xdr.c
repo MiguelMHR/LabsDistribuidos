@@ -11,7 +11,7 @@ xdr_message (XDR *xdrs, message *objp)
 	register int32_t *buf;
 
 	int i;
-	 if (!xdr_int (xdrs, &objp->key))
+	 if (!xdr_int (xdrs, &objp->key_or_return))
 		 return FALSE;
 	 if (!xdr_vector (xdrs, (char *)objp->value1, 256,
 		sizeof (char), (xdrproc_t) xdr_char))

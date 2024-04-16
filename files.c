@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "claves.h"
+
 // Definiciones básicas
 #define MAX_STR_LENGTH 1024
 
@@ -42,7 +44,7 @@ int clean_directory(const char *dirname) {
 // ----------     FUNCIONES PRINCIPALES     ---------- //
 
 // Función para comprobar la existencia del mensaje
-int exists(int key) {
+int exist(int key) {
     printf("\n[files][server] Comprobando existencia de la clave %d\n", key);
     FILE *file;
     char path[MAX_STR_LENGTH];
@@ -88,7 +90,7 @@ int init(){
 // Función para almacenar la tupla
 int set_value(int key, char* value1, int N_value2, double* V_value_2) {
     printf("\n[files][server] Almacenando tupla con clave %d\n", key);
-    if (exists(key)) {
+    if (exist(key)) {
         printf("[files][server] La clave ya existe\n\n");
         return -1;
     }
@@ -132,7 +134,7 @@ int set_value(int key, char* value1, int N_value2, double* V_value_2) {
 // Función para obtener la tupla
 int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
     printf("\n[files][server] Obteniendo tupla con clave %d\n", key);
-    if (!exists(key)) {
+    if (!exist(key)) {
         printf("La clave no existe\n\n");
         return -1;
     }
@@ -163,7 +165,7 @@ int get_value(int key, char* value1, int* N_value2, double* V_value_2) {
 // Función para eliminar la tupla
 int delete_key(int key) {
     printf("\n[files][server] Eliminando tupla con clave %d\n", key);
-    if (!exists(key)) {
+    if (!exist(key)) {
         printf("La clave no existe\n\n");
         return -1;
     }
@@ -181,7 +183,7 @@ int delete_key(int key) {
 // Función para modificar la tupla
 int modify_value(int key, char* value1, int N_value2, double* V_value_2) {
     printf("\n[files][server] Modificando tupla con clave %d\n", key);
-    if (!exists(key)) {
+    if (!exist(key)) {
         printf("La clave no existe\n\n");
         return -1;
     }
