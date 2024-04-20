@@ -185,6 +185,73 @@ void test_set_value_big_value1(){
     }
 }
 
+void test_delete_key_twice() {
+    printf("\n🧪 Iniciando prueba de delete_key_twice()...\n");
+    printf("Se espera que la función falle al intentar eliminar una clave dos veces\n\n\n");
+    int success = delete_key(7);
+    if (success == 0) {
+        printf("✅ (delete_key): Success: la tupla fue eliminada correctamente\n\n\n");
+        // Intenta eliminar la misma clave nuevamente
+        success = delete_key(7);
+        if (success != 0) {
+            printf("❌ (delete_key): Error: la tupla fue eliminada nuevamente\n\n\n");
+        }
+    } else {
+        printf("❌ (delete_key): Error: no se pudo eliminar la tupla\n\n\n");
+    }
+}
+
+void test_init_then_exist() {
+    printf("\n🧪 Iniciando prueba de init seguida de exist...\n");
+    printf("Se espera que la función init limpie correctamente la carpeta y luego exist devuelva 0 para una clave inexistente\n\n\n");
+    init(); // Inicializar
+    int success = exist(13); // Verificar si una clave específica existe
+    if (success == 0) {
+        printf("✅ (exist): Success: la clave no existe después de init\n\n\n");
+    } else {
+        printf("❌ (exist): Error: la clave existe después de init\n\n\n");
+    }
+}
+
+void test_create_then_delete() {
+    printf("\n🧪 Iniciando prueba de crear luego eliminar...\n");
+    printf("Se espera que la función crear luego eliminar funcione correctamente\n\n\n");
+    
+    // Primero crea la clave
+    double V_value_2[3] = {1.0, 3.0, 7.0};
+    char value1[10] = "test";
+    int create_result = set_value(14, value1, 3, V_value_2);
+    
+    // Luego intenta eliminarla
+    int delete_result = delete_key(14);
+    
+    if (create_result == 0 && delete_result == 0) {
+        printf("✅ (crear_luego_eliminar): Success: la clave se creó y eliminó correctamente\n\n\n");
+    } else {
+        printf("❌ (crear_luego_eliminar): Error: no se pudo crear o eliminar la clave\n\n\n");
+    }
+}
+
+void test_create_then_modify_twice() {
+    printf("\n🧪 Iniciando prueba de crear y luego modificar dos veces el mismo valor...\n");
+    printf("Se espera que la función crear y luego modificar dos veces funcione correctamente\n\n\n");
+    
+    // Primero crea la clave
+    double V_value_2[3] = {1.0, 3.0, 7.0};
+    char value1[10] = "test";
+    int create_result = set_value(15, value1, 3, V_value_2);
+    
+    // Luego modifícala dos veces
+    int modify_result_1 = modify_value(15, "updated", 3, V_value_2);
+    int modify_result_2 = modify_value(15, "updated again", 3, V_value_2);
+    
+    if (create_result == 0 && modify_result_1 == 0 && modify_result_2 == 0) {
+        printf("✅ (crear_modificar_dos_veces): Success: la clave se creó y se modificó dos veces correctamente\n\n\n");
+    } else {
+        printf("❌ (crear_modificar_dos_veces): Error: no se pudo crear o modificar la clave dos veces\n\n\n");
+    }
+}
+
 void all_tests(){
     test_init();
     test_set_value_nokey();
@@ -197,13 +264,18 @@ void all_tests(){
     test_exist_no();
     test_delete_key();
     test_delete_key_nokey();
+    test_delete_key_twice();
+    test_init_then_exist();
+    test_create_then_delete();
+    test_create_then_modify_twice();
+
 
     // Se han comentado las pruebas que involucran la creación de tuplas con valores muy grandes
     // ya que te echa directamente de la ejecución del programa
     
-    // test_set_value_big_nvalue2();
-    // test_modify_value_big_nvalue2();
-    // test_set_value_big_value1();
+    //test_set_value_big_nvalue2();
+    //test_modify_value_big_nvalue2();
+    //test_set_value_big_value1();
 
 }
 
