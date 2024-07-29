@@ -1,5 +1,4 @@
 # Sistemas Distribuidos
-En este repositorio se encuentra las implementaciones de 3 protocolos diferentes de envíos de mensajes:
-- Colas de mensajes
+En este repositorio se encuentra las implementaciones de 2 protocolos diferentes de compartición de información:
 - Sockets
 - RPC SUN
